@@ -20,7 +20,8 @@ namespace ClearanceCycle.Domain.Factories
             {
                 CurrentStepId = currentStepId,
                 IsFinished = isFinished,
-                ApprovalGroups = approvalGroups.Select(id => new StepApprovalGroupApproval
+                CreatedAt = DateTime.Now,
+                ApprovalGroups = approvalGroups.Select(id => new StepApprovalAssignments
                 {
                     ApprovalGroupId = id
                 })

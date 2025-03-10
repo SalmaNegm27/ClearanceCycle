@@ -6,8 +6,14 @@ using System.Threading.Tasks;
 
 namespace ClearanceCycle.Domain.Enums
 {
-    public enum ClearanceStatus
+    public enum ResignationStatus
     {
-        Pending
+
+        New = 1,
+        Pending = 2,
+        PendingApprove = 3,
+        Canceled = 4,
+        Finished = 5
+
     }
 }

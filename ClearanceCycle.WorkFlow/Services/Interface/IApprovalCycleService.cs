@@ -10,7 +10,7 @@ namespace ApprovalSystem.Services.Services.Interface
     public interface IApprovalCycleService
     {
         public Task<StepResponseDto> GetFirstStep( int cycleId);
-        public Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int stepId);
+        public Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int? stepId);
         public Task<ActionResponseDto> GetCurrentStepActions(int stepId);
     }
 }

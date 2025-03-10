@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ClearanceCycle.Domain.Entities
 {
-    public class StepApprovalGroupApproval
+    public class StepApprovalAssignments
     {
         public int Id { get; set; }
         public int StepApprovalGroupId { get; set; }

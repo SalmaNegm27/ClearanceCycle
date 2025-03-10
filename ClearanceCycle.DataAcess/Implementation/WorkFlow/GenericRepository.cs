@@ -1,8 +1,4 @@
-﻿using ClearanceCycle.DataAcess.Models;
-using ClearanceCycle.WorkFlow.Repositories.Interface;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace ClearanceCycle.DataAcess.Implementation.WorkFlow
 {

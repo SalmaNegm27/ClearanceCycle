@@ -1,18 +1,25 @@
-﻿using ClearanceCycle.Application.Dtos;
-using ClearanceCycle.Application.Interfaces;
-using ClearanceCycle.Application.UseCases.Commands;
-using ClearanceCycle.DataAcess.Models;
-using ClearanceCycle.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-
-namespace ClearanceCycle.DataAcess.Implementation
+﻿namespace ClearanceCycle.DataAcess.Implementation
 {
+    using ApprovalSystem.Services.Services.Interface;
+    using ClearanceCycle.Application.Dtos;
+    using ClearanceCycle.Application.Interfaces;
+    using ClearanceCycle.Application.UseCases.Commands;
+    using ClearanceCycle.Domain.Entities;
+    using ClearanceCycle.Domain.Enums;
+    using Microsoft.EntityFrameworkCore;
+    using System.Linq.Expressions;
+
     public class WriteRepository : IWriteRepository
     {
         private readonly AuthDbContext _context;
-        public WriteRepository(AuthDbContext context)
+        private readonly IApprovalCycleService _approvalCycleService;
+        public WriteRepository(AuthDbContext context, IApprovalCycleService approvalCycleService)
         {
             _context = context;
+            _approvalCycleService = approvalCycleService;
+            
+
+
         }
         #region Add New Clearance Request
         public async Task<int> AddAsync(ClearanceRequest clearanceRequest)
@@ -26,8 +33,10 @@ namespace ClearanceCycle.DataAcess.Implementation
         #endregion
 
         #region Approve Clearance Request
-        public async Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance, List<int> approvalGroups, string stepName)
+        public async Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance)
         {
+
+            var step = await _approvalCycleService.GetCurrentStepWithApprovalGroupIds(approveClearance.NextStepId);
             ClearanceRequest? request = await _context.ClearanceRequests
                                                       .Include(c => c.StepApprovalGroup)
                                                       .ThenInclude(s => s.ApprovalGroups)
@@ -38,6 +47,11 @@ namespace ClearanceCycle.DataAcess.Implementation
                 throw new InvalidOperationException("Request Doesn't Exist");
             }
 
+            if (approveClearance.NextStepId == null)
+            {
+                request.IsFinished = true;
+                request.Status = ResignationStatus.Finished;
+            }
             var approvalGroupToUpdate = request.StepApprovalGroup.ApprovalGroups
                 .FirstOrDefault(a => a.ApprovalGroupId == approveClearance.ApprovalGroupId);
 
@@ -60,12 +74,13 @@ namespace ClearanceCycle.DataAcess.Implementation
                     {
                         CurrentStepId = approveClearance.NextStepId,
                         IsFinished = false,
-                        ApprovalGroups = approvalGroups.Select(id => new StepApprovalGroupApproval
+                        CreatedAt = DateTime.UtcNow,
+                        ApprovalGroups = step.Step.ApprovalGroupIds.Select(id => new StepApprovalAssignments
                         {
                             ApprovalGroupId = id,
                             IsApproved = false
                         }).ToList(),
-                        Name = stepName
+                        Name = step.Step.Name
                     };
 
                     _context.StepApprovalGroups.Add(newStep);
@@ -89,7 +104,6 @@ namespace ClearanceCycle.DataAcess.Implementation
         #endregion
 
         #region Pending Clearance Request
-
         public async Task<ReponseDto> PendingRequest(ProcessClearanceActionCommand pendingClearance)
         {
             ClearanceRequest? request = await _context.ClearanceRequests
@@ -103,6 +117,7 @@ namespace ClearanceCycle.DataAcess.Implementation
             }
 
             request.Status = ResignationStatus.Pending;
+            request.Comment = pendingClearance.Comment;
 
 
             if (await _context.SaveChangesAsync() > 0)
@@ -186,6 +201,45 @@ namespace ClearanceCycle.DataAcess.Implementation
         }
 
         #endregion
+
+        public async Task<int> AddApprovalWithEscalationAsync(ApprovalGroupEmployeesDto request)
+        {
+            if (request == null || request.EscalationEmails == null)
+            {
+                throw new ArgumentException("Invalid request data.");
+            }
+
+            try
+            {
+                var approvalGroupEmployee = new ApprovalGroupEmployee
+                {
+                    ApprovalGroupId = request.ApprovalGroupId,
+                    EmployeeId = request.EmployeeId,
+                    IsActive = request.IsActive,
+                    IsAdmin = request.IsAdmin,
+                    CompanyId = request.CompanyId,
+                    MajorAreaId = request.MajorAreaId
+                };
+
+                _context.ApprovalGroupEmployees.Add(approvalGroupEmployee);
+
+                var escalationEmployees = request.EscalationEmails.Select(email => new EscalationPointEmployee
+                {
+                    ApprovalGroupEmployeeId = approvalGroupEmployee.Id,
+                    Email = email
+                }).ToList();
+
+                _context.EscalationPointEmployees.AddRange(escalationEmployees);
+                await _context.SaveChangesAsync();
+
+                return approvalGroupEmployee.Id;
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
 
     }
 }

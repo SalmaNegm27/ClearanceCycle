@@ -12,5 +12,7 @@ namespace ClearanceCycle.Application.Dtos
         public string ActionAt { get; set; }
         public string ActionType { get; set; }
         public string Comment { get; set; }
+        public string GroupName { get; set; }
+        
     }
 }

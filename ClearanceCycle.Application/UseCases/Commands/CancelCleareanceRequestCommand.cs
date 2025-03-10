@@ -10,12 +10,14 @@ namespace ClearanceCycle.Application.UseCases.Commands
 {
     public record CancelCleareanceRequestCommand : IRequest<ReponseDto>
     {
-        public int RequestId { get; set; }
-        public string ActionBy { get; set; }
-        public CancelCleareanceRequestCommand(int requstId, string actionBy)
+        public int RequestId { get; }
+        public string ActionBy { get; }
+        public int ApprovalGroupId { get; set; }
+        public CancelCleareanceRequestCommand(int requstId, string actionBy,int aprovalGroupId)
         {
             RequestId = requstId;
             ActionBy = actionBy;
+            ApprovalGroupId = aprovalGroupId;
         }
     }
 }

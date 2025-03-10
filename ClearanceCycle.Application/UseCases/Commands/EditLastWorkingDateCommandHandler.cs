@@ -15,7 +15,7 @@ namespace ClearanceCycle.Application.UseCases.Commands
         public async Task<ReponseDto> Handle(EditLastWorkingDateCommand request, CancellationToken cancellationToken)
         {
           var result =  await _writeRepository.UpdateLastWorkingDate(request);
-            var requestHistory = ClearanceHistoryFactory.Create(request.ActionBy, Domain.Enums.ActionType.Modified, "Request Updated", request.RequestId);
+            var requestHistory = ClearanceHistoryFactory.Create(request.ActionBy, Domain.Enums.ActionType.Modified, "Request Updated", request.RequestId,"");
             await _writeRepository.AddHistoryAsync(requestHistory);
             return result;
         }

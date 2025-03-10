@@ -25,6 +25,7 @@ namespace ClearanceCycle.Application.Dtos
         public string Comment { get; set; }
 
         public string DirectManager { get; set; }
+        public string Phone { get; set; }
 
         public IList<ActionDto> Actions { get; set; }
     }

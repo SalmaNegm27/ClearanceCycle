@@ -13,6 +13,6 @@ namespace ClearanceCycle.Application.UseCases.Commands
         public int CompanyId { get; set; }
         public string CompanyName { get; set; }
         public string DirectManagerHrId { get; set; }
-        public string DepartmentManagerHrId { get; set; }
+        public string SecondManagerHrId { get; set; }
     }
 }

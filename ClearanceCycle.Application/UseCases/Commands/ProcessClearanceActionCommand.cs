@@ -6,7 +6,7 @@ namespace ClearanceCycle.Application.UseCases.Commands
     public record ProcessClearanceActionCommand : IRequest<ReponseDto>
     {
         public int RequestId { get; set; }
-        public int NextStepId { get; set; }
+        public int? NextStepId { get; set; }
         public int ApprovalGroupId { get; set; }
         public string ActionBy { get; set; }
         public int ActionId { get; set; }

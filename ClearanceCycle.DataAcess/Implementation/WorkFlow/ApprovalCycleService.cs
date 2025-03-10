@@ -1,12 +1,4 @@
-﻿using ApprovalSystem.Services.Services.Interface;
-using AutoMapper;
-using ClearanceCycle.DataAcess.Models;
-using ClearanceCycle.WorkFlow.DTOs;
-using ClearanceCycle.WorkFlow.Models;
-using ClearanceCycle.WorkFlow.Repositories.Interface;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query;
-
+﻿
 namespace ClearanceCycle.WorkFlow.Repositories.Implementation
 {
     public class ApprovalCycleService : IApprovalCycleService
@@ -54,7 +46,7 @@ namespace ClearanceCycle.WorkFlow.Repositories.Implementation
 
 
 
-        public async Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int stepId)
+        public async Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int? stepId)
         {
             var result = new StepResponseDto();
 
@@ -88,6 +80,17 @@ namespace ClearanceCycle.WorkFlow.Repositories.Implementation
             return result;
 
         }
+
+        #region Get Approval GroupName With Id
+        public async Task<string> GetGroupName(int id)
+        {
+            var result = await _context.ApprovalGroups.FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+            if (result == null)
+                throw new ArgumentNullException("Invalid Approval Group");
+            return result.Name;
+
+        }
+        #endregion
 
     }
 }

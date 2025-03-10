@@ -12,7 +12,6 @@ namespace ClearanceCycle.Application.UseCases.Commands
         public EditLastWorkingDateCommandValidater()
         {
             RuleFor(x => x.LastWorkingDay).NotEmpty().WithMessage("Last Workind date is mandatory");
-            RuleFor(x => x.LastWorkingDay).GreaterThanOrEqualTo(DateTime.Now).WithMessage("Last Working Date can not be in the past");
         }
     }
 }

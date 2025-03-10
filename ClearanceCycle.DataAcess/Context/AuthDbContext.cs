@@ -1,9 +1,4 @@
-﻿using System.Text.Json;
-using ClearanceCycle.Domain.Entities;
-using ClearanceCycle.WorkFlow.Models;
-using Microsoft.EntityFrameworkCore;
-
-namespace ClearanceCycle.DataAcess.Models;
+﻿namespace ClearanceCycle.DataAcess.Context;
 
 public partial class AuthDbContext : DbContext
 {
@@ -36,7 +31,8 @@ public partial class AuthDbContext : DbContext
     public virtual DbSet<MajourArea> MajourAreas { get; set; }
 
     public virtual DbSet<SubDepartment> SubDepartments { get; set; }
-    public virtual DbSet<StepApprovalGroupApproval> StepApprovalGroupApproval { get; set; }
+    public virtual DbSet<StepApprovalAssignments> StepApprovalAssignments { get; set; }
+    public virtual DbSet<EscalationPointEmployee> EscalationPointEmployees { get; set; }
 
 
 
@@ -239,8 +235,8 @@ public partial class AuthDbContext : DbContext
         modelBuilder.Entity<Step>()
        .Property(e => e.ApprovalGroupIds)
        .HasConversion(
-           v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-           v => JsonSerializer.Deserialize<List<int>>(v, (JsonSerializerOptions?)null));
+           v => System.Text.Json.JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+           v => System.Text.Json.JsonSerializer.Deserialize<List<int>>(v, (JsonSerializerOptions?)null));
 
         
 

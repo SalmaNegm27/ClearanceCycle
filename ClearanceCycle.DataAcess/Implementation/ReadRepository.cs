@@ -1,13 +1,4 @@
-﻿using System.Text.RegularExpressions;
-using ApprovalSystem.Services.Services.Interface;
-using ClearanceCycle.Application.Dtos;
-using ClearanceCycle.Application.Interfaces;
-using ClearanceCycle.Application.UseCases.Queries;
-using ClearanceCycle.DataAcess.Models;
-using ClearanceCycle.Domain.Entities;
-using Microsoft.EntityFrameworkCore;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-
+﻿
 namespace ClearanceCycle.DataAcess.Implementation
 {
     public class ReadRepository : IReadRepository
@@ -24,47 +15,49 @@ namespace ClearanceCycle.DataAcess.Implementation
         public async Task<ResultDto<ClearanceDetailsDto>> GetRequestByID(int requestId, int stepId)
         {
             ClearanceCycle.WorkFlow.DTOs.ActionResponseDto stepActions = await _approvalCycleService.GetCurrentStepActions(stepId);
-           var request = await _context.ClearanceRequests.Where(c => c.Id == requestId && c.IsCanceled == false && c.IsFinished == false)
-                                                         .Select(c => new
-                                                         {
+            var request = await _context.ClearanceRequests.Where(c => c.Id == requestId && c.IsCanceled == false && c.IsFinished == false).AsNoTracking()
+                                                          .Select(c => new
+                                                          {
 
-                                                             c.Id,
-                                                             c.ResigneeHrId,
-                                                             c.ResigneeName,
-                                                            c.ClearanceReason.Reason,
-                                                             c.LastWorkingDayDate,
-                                                             c.CreatedAt,
-                                                             StepName=c.StepApprovalGroup.Name,
-                                                             c.Status,
-                                                             MajourArea = c.Employee.MajourArea.Name,
-                                                             SubDepartment = c.Employee.SubDepartment.Name,
-                                                             Department = c.Employee.Department.Name,
+                                                              c.Id,
+                                                              c.ResigneeHrId,
+                                                              c.ResigneeName,
+                                                              c.ClearanceReason.Reason,
+                                                              c.LastWorkingDayDate,
+                                                              c.CreatedAt,
+                                                              StepName = c.StepApprovalGroup.Name,
+                                                              c.Status,
+                                                              MajourArea = c.Employee.MajourArea.Name,
+                                                              SubDepartment = c.Employee.SubDepartment.Name,
+                                                              Department = c.Employee.Department.Name,
                                                               c.Comment,
-                                                             FunctionName = c.Employee.Function.Name,
-                                                             c.DirectManagerHrid,
-                                                         }).FirstOrDefaultAsync();
+                                                              FunctionName = c.Employee.Function.Name,
+                                                              c.DirectManagerHrid,
+                                                              Phone = c.Employee.Phone,
+                                                          }).FirstOrDefaultAsync();
 
-            if (request == null) throw new ArgumentNullException(nameof(request));
+            if (request == null) throw new InvalidOperationException(nameof(request));
 
             var DirectManager = await GetEmployeeName(request.DirectManagerHrid);
 
             var result = new ClearanceDetailsDto
             {
-                Id=request.Id,
+                Id = request.Id,
                 ResigneeHrId = request.ResigneeHrId,
                 ResigneeName = request.ResigneeName,
                 Comment = request.Comment,
-                CreatedAt= request.CreatedAt.ToString("dd-MM-yyyy"),
-                MajourArea = request.MajourArea, 
+                CreatedAt = request.CreatedAt.ToString("dd-MM-yyyy"),
+                MajourArea = request.MajourArea,
                 SubDepartment = request.SubDepartment,
-                Department=request.Department,
+                Department = request.Department,
                 DirectManager = DirectManager,
-                Reason=request.Reason.ToString(),
+                Reason = request.Reason.ToString(),
                 LastWorkingDayDate = request.LastWorkingDayDate.ToString("dd-MM-yyyy"),
-                Actions =stepActions.Actions,
-                FunctionName =request.FunctionName,
-                Status=request.Status.ToString(),   
-                StepApprovalGroupName=request.StepName
+                Actions = stepActions.Actions,
+                FunctionName = request.FunctionName,
+                Status = request.Status.ToString(),
+                StepApprovalGroupName = request.StepName,
+                Phone = request.Phone
             };
 
 
@@ -79,7 +72,13 @@ namespace ClearanceCycle.DataAcess.Implementation
 
         private async Task<string> GetEmployeeName(string Hrid)
         {
-            return await _context.Employees.Where(e => e.HrId == Hrid && e.Active).Select(e => e.FullName).FirstOrDefaultAsync();
+            var employee = await _context.Employees.Where(e => e.HrId == Hrid && e.Active).
+                Select(e => e.FullName).FirstOrDefaultAsync();
+            //if(employee == null)
+            //{
+            //    throw new InvalidOperationException("Manager Doesn't Exist");
+            //}
+            return employee;
         }
 
         #endregion
@@ -92,21 +91,40 @@ namespace ClearanceCycle.DataAcess.Implementation
 
             requests = ApplyGroupFilter(requests, query);
 
-          
+            //var permissions =  GetAllPermissions(query.HrId, query.GroupId);
+            // Apply company and major area filter
+            requests = ApplyPermissionFilter(requests, query.HrId, query.GroupId);
+            // sorting
             if (!string.IsNullOrEmpty(query.SortField))
             {
                 query.SortField = query.SortField.Trim();
-                bool isAscending = query.SortType?.ToLower() == "ASC";
-                requests = isAscending
-                    ? requests.OrderByDynamic(query.SortField)
-                    : requests.OrderByDescendingDynamic(query.SortField);
+                bool isAscending = query.SortType?.ToLower() == "asc";
+                try
+                {
+                    requests = isAscending
+                        ? requests.OrderByDynamic(query.SortField)
+                        : requests.OrderByDescendingDynamic(query.SortField);
+                }
+                catch
+                {
+                    requests = requests.OrderBy(c => c.Id);
+                }
             }
-
+            // count total requests
             int totalRecords = await requests.CountAsync();
 
-            // pagination
+            if (totalRecords == 0)
+            {
+                return new ResultDto<ClearanceRequestsDto>
+                {
+                    TotalRecords = 0,
+                    Success = true,
 
-            var data = await requests.Skip((query.PageNumber - 1) * query.RawsNumber).Take(query.RawsNumber)
+                };
+            }
+
+            // pagination
+            var data = await requests.OrderBy(r=>r.Id).Skip((query.PageNumber - 1) * query.RawsNumber).Take(query.RawsNumber)
                                .Select(c => new ClearanceRequestsDto
                                {
                                    Id = c.Id,
@@ -114,7 +132,7 @@ namespace ClearanceCycle.DataAcess.Implementation
                                    CurrentStepName = c.StepApprovalGroup.Name,
                                    Status = c.Status.ToString(),
                                    Reason = c.ClearanceReason.Reason,
-                                   LastWorkingDayDate = c.LastWorkingDayDate.ToString(),
+                                   LastWorkingDayDate = c.LastWorkingDayDate.ToString("dd/MM/yyyy"),
                                    Name = c.ResigneeName,
                                    Department = c.Employee.Department.Name,
                                    Company = c.CompanyName,
@@ -124,6 +142,9 @@ namespace ClearanceCycle.DataAcess.Implementation
 
                                }).ToListAsync();
 
+            string sqlQuery = requests.ToQueryString();
+            Console.WriteLine(sqlQuery);
+
             return new ResultDto<ClearanceRequestsDto>
             {
                 TotalRecords = totalRecords,
@@ -131,6 +152,7 @@ namespace ClearanceCycle.DataAcess.Implementation
                 Success = true,
 
             };
+
 
         }
 
@@ -140,12 +162,14 @@ namespace ClearanceCycle.DataAcess.Implementation
                                                     .Include(r => r.ClearanceReason)
                                                     .Include(r => r.Employee)
                                                     .Include(r => r.StepApprovalGroup)
-                                                    .ThenInclude(r => r.ApprovalGroups).AsQueryable();
+                                                    // then include 
+                                                    .Include(r => r.StepApprovalGroup.ApprovalGroups)
+                                                    .Where(r => !r.IsCanceled && !r.IsFinished);
 
             if (query.GroupId > 0)
             {
                 baseQuery = baseQuery.Where(r => r.StepApprovalGroup.ApprovalGroups
-                                                    .Any(x => x.ApprovalGroupId == query.GroupId  && x.IsApproved == false));
+                                                    .Any(x => x.ApprovalGroupId == query.GroupId && x.IsApproved == false));
             }
             return baseQuery;
         }
@@ -155,33 +179,71 @@ namespace ClearanceCycle.DataAcess.Implementation
         {
             if (!string.IsNullOrEmpty(query.Filter))
             {
-                query.Filter = query.Filter.Trim();
-                requests = requests.Where(x => x.ResigneeName.Contains(query.Filter) ||
-                                         x.ResigneeHrId.Contains(query.Filter) ||
-                                         //x.ClearanceReason.ToString().Contains(query.Filter) ||
-                                         x.CreatedBy.Contains(query.Filter) ||
-                                         x.Employee.NationalId.Contains(query.Filter) ||
-                                        x.ClearanceReason.Reason.Contains(query.Filter));
+                string filter = query.Filter.Trim();
+                requests = requests.Where(x =>
+                    x.ResigneeName.Contains(filter) ||
+                    x.ResigneeHrId.Contains(filter) ||
+                    x.CreatedBy.Contains(filter) ||
+                    x.Employee.NationalId.Contains(filter) ||
+                    x.ClearanceReason.Reason.Contains(filter));
             }
 
-            if (query.GroupId == (int)ApprovalGroups.DirectManager)
+            return query.GroupId switch
             {
-                return requests.Where(c => c.DirectManagerHrid == query.HrId);
-            }
-            else if (query.GroupId == (int)ApprovalGroups.DepartmentManager)
-            {
-                return requests.Where(c => c.DepartmentManagerHrid == query.HrId);
-            }
-            return requests;
+                (int)ApprovalGroups.DirectManager => requests.Where(c => c.DirectManagerHrid == query.HrId),
+                (int)ApprovalGroups.SecondManager => requests.Where(c => c.SecondManagerHrId == query.HrId),
+                _ => requests
+            };
         }
+        private IQueryable<ClearanceRequest> ApplyPermissionFilter(IQueryable<ClearanceRequest> requests, string employeeHrId, int? groupId)
+        {
+            return requests.Where(r => _context.ApprovalGroupEmployees
+                .Where(a => a.Employee.HrId == employeeHrId && a.ApprovalGroupId == groupId && a.IsActive)
+                .Any(p =>
+                    (p.CompanyId == 0 || p.CompanyId == r.Employee.CompanyId) &&
+                    (p.MajorAreaId == 0 || p.MajorAreaId == r.Employee.MajourAreaId)));
+        }
+
+        private IQueryable<ClearanceRequest> ApplyPermissionFilter(IQueryable<ClearanceRequest> requests, IQueryable<approvalsgroupdto> permissions)
+        {
+            if (!permissions.Any()) return requests;
+
+            return requests.Where(r => permissions.Any(p =>
+                (p.CompanyId == 0 || p.CompanyId == r.Employee.CompanyId) &&
+                (p.MajorAreaId == 0 || p.MajorAreaId == r.Employee.MajourAreaId)));
+        }
+
+        private IQueryable<approvalsgroupdto> GetAllPermissions(string employeeHrId, int? groupId)
+        {
+            return  _context.ApprovalGroupEmployees.Where(a => a.Employee.HrId == employeeHrId && a.ApprovalGroupId == groupId && a.IsActive)
+                                                .Select(a => new approvalsgroupdto
+                                                {
+                                                    MajorAreaId = a.MajorAreaId,
+                                                    CompanyId = a.CompanyId,
+                                                }).AsNoTracking();
+        }
+
+        //var companyIds = permissions.Select(p => p.CompanyId).Distinct().ToList();
+        //var majorAreaIds = permissions.Select(p => p.MajorAreaId).Distinct().ToList();
+        //return requests.Where(r =>
+        //     companyIds.Contains(r.Employee.CompanyId) &&
+        //     majorAreaIds.Contains(r.Employee.MajourAreaId)); 
+        //    return requests.Where(r =>
+        //        (companyIds.Contains(0) || companyIds.Contains(r.Employee.CompanyId)) &&
+        //        (majorAreaIds.Contains(0) || majorAreaIds.Contains(r.Employee.MajourAreaId)));
+        //    return requests
+        //        .Where(r => permissions
+        //        .Any(p => p.CompanyId == r.Employee.CompanyId && p.MajorAreaId == r.Employee.MajourAreaId)).AsQueryable();
+        //}
+
 
 
         #endregion
 
         #region Check If Request Exist Before
-        public async Task<bool> ExistsAsync(int resigneeId, DateTime lastWorkingDay)
+        public async Task<bool> ExistsAsync(int resigneeId)
         {
-            return await _context.ClearanceRequests.AnyAsync(c => c.EmployeeId == resigneeId && c.LastWorkingDayDate == lastWorkingDay && !c.IsCanceled && !c.IsFinished);
+            return await _context.ClearanceRequests.AnyAsync(c => c.EmployeeId == resigneeId && !c.IsCanceled && !c.IsFinished);
         }
 
         #endregion
@@ -209,14 +271,16 @@ namespace ClearanceCycle.DataAcess.Implementation
                                                         ActionAt = x.ActionAt.ToString("yyyy-MM-dd"),
                                                         ActionBy = x.ActionBy,
                                                         ActionType = x.ActionType.ToString(),
+                                                        Comment = x.Comment,
+                                                        GroupName = x.ApprovalGroup
+
                                                     }).ToListAsync();
-
-
 
             return new ResultDto<RequestHistoryDto>
             {
                 Data = requests,
                 Success = true,
+                TotalRecords = requests.Count()
 
             };
 
@@ -224,16 +288,23 @@ namespace ClearanceCycle.DataAcess.Implementation
 
         #endregion
 
+        #region Get Approval GroupName With Id
+        public async Task<string> GetGroupName(int id)
+        {
+            if (id == (int)ApprovalGroups.DirectManager)
+            { return "Direct Manager"; }
+            else if (id == (int)ApprovalGroups.SecondManager)
+            { return "Second Manager"; }
+            var result = await _context.ApprovalGroups.FirstOrDefaultAsync(a => a.Id == id && a.IsActive);
+            if (result == null)
+                throw new ArgumentNullException("Invalid Approval Group");
+            return result.Name;
 
-
+        }
+        #endregion
 
     }
 
-    public enum ApprovalGroups
-    {
-        DirectManager = 1,
-        DepartmentManager = 2
-    }
 
     public static class QueryableExtensions
     {
@@ -247,5 +318,18 @@ namespace ClearanceCycle.DataAcess.Implementation
             return source.OrderByDescending(e => EF.Property<object>(e, orderByProperty));
         }
     }
+
+    public record approvalsgroupdto
+    {
+        public int? MajorAreaId { get; set; }
+        public int? CompanyId { get; set; }
+    }
+    public enum ApprovalGroups
+    {
+        DirectManager = 1,
+        SecondManager = 2,
+
+    }
+
 
 }

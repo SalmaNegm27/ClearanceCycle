@@ -5,15 +5,16 @@ namespace ClearanceCycle.Domain.Factories
 {
     public class ClearanceHistoryFactory
     {
-        public static ClearanceHistory Create(string actionBy ,ActionType actionType,string comment,int requestId)
+        public static ClearanceHistory Create(string actionBy ,ActionType actionType,string comment,int requestId ,string approvalGroup)
         {
             return new ClearanceHistory
             {
                 ActionBy = actionBy,
-                ActionAt = DateTime.Now,
+                ActionAt = DateTime.UtcNow,
                 ActionType = actionType,
                 Comment = comment ,
-                ClearanceRequestId = requestId
+                ClearanceRequestId = requestId,
+                ApprovalGroup=approvalGroup
             };
         }
     }

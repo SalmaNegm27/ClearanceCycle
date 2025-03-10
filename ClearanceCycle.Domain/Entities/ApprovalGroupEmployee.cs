@@ -18,4 +18,10 @@ public partial class ApprovalGroupEmployee
     public virtual ApprovalGroup ApprovalGroup { get; set; } = null!;
 
     public virtual Employee Employee { get; set; } = null!;
+
+    public int? CompanyId { get; set; }
+    public int? MajorAreaId { get; set; }
+    public MajourArea MajourArea { get; set; }
+
+    public ICollection<EscalationPointEmployee> EscalationPointEmployees { get; set; }
 }

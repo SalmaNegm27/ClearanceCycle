@@ -18,6 +18,6 @@ namespace ClearanceCycle.Application.Dtos
         public string Status { get; set; }
         public string CurrentStepName { get; set; }
         public string LastWorkingDayDate { get; set; }
-        public int currentStepId { get; set; }
+        public int? currentStepId { get; set; }
     }
 }

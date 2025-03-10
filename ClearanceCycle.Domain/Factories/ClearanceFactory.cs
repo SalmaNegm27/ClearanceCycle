@@ -14,12 +14,12 @@ namespace ClearanceCycle.Domain.Factories
                                             string createdBy, int stepId,
                                             List<int> approvals, string stepName
                                             ,string companyName,string dirHrId,
-                                            string deptHrId)
+                                            string secondHrId)
         {
 
           
             DateTime trimmedLastWorkingDate = TrimSeconds(lastWorkingDate);
-            DateTime createdAt = TrimSeconds(DateTime.Now);
+            DateTime createdAt = TrimSeconds(DateTime.UtcNow);
 
             return new ClearanceRequest
             {
@@ -34,9 +34,9 @@ namespace ClearanceCycle.Domain.Factories
                 CreatedBy = createdBy,
                 CompanyName = companyName,
                 StepApprovalGroup = StepApprovalGroupFactory.Create(stepId, false, approvals, stepName),
-                DirectManagerHrid = deptHrId,
-                DepartmentManagerHrid = deptHrId,
-                ClearanceHistories = new List<ClearanceHistory>() { new ClearanceHistory { ActionBy = createdBy,ActionAt= createdAt, ActionType = ActionType.Created, Comment = "Request Created Sucessfully" } }
+                DirectManagerHrid = dirHrId,
+                SecondManagerHrId = secondHrId,
+                ClearanceHistories = new List<ClearanceHistory>() { new ClearanceHistory { ActionBy = createdBy, ActionAt = createdAt, ActionType = ActionType.Created, Comment = "Request Created Sucessfully",ApprovalGroup= "Created by"+createdBy } }
             };
         }
     private static DateTime TrimSeconds(DateTime date) =>

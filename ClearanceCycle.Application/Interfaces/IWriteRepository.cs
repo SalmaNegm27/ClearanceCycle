@@ -8,11 +8,13 @@ namespace ClearanceCycle.Application.Interfaces
     {
         Task<int> AddAsync(ClearanceRequest clearanceRequest);
         Task<int> AddHistoryAsync(ClearanceHistory clearanceHistory);
-        Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance, List<int> approvalGroups, string stepName);
+        Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance);
         Task<ReponseDto> PendingRequest(ProcessClearanceActionCommand pendingClearance);
 
         Task<ReponseDto> CancelRequest(CancelCleareanceRequestCommand cancelCleareance);
         Task<ReponseDto> UpdateLastWorkingDate(EditLastWorkingDateCommand editLastWorking);
+        Task<int> AddApprovalWithEscalationAsync(ApprovalGroupEmployeesDto request);
+
 
 
     }

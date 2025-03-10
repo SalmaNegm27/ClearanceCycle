@@ -8,5 +8,7 @@
         public int CurrentStepId { get; set; }
         public Step CurrentStep { get; set; }
         public int? NextStepId { get; set; }
+        public bool NeedComment { get; set; }
+
     }
 }

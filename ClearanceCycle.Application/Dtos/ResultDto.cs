@@ -11,7 +11,7 @@ namespace ClearanceCycle.Application.Dtos
         public bool Success { get; set; } = false;
         public string Message { get; set; }
     }
-    public class ResultDto <T> : ReponseDto
+    public class ResultDto<T> : ReponseDto
     {
         public object Data { get; set; } 
         

@@ -31,13 +31,13 @@ namespace ClearanceCycle.Application.UseCases.Commands
             WorkFlow.DTOs.StepResponseDto firstStep = await _approvalCycle.GetFirstStep(cycleId);
             if (firstStep == null) throw new Exception("Invalid cycle step data.");
 
-            if (await _readRepository.ExistsAsync(request.ResigneeId, request.LastWorkingDay))
+            if (await _readRepository.ExistsAsync(request.ResigneeId))
             {
                 throw new Exception("Clearance request already exists.");
             }
 
             var clearance = ClearanceFactory.Create(request.CompanyId, request.ResigneeId, request.LastWorkingDay, request.ResignationReasonId, request.ResigneeHrId, request.ResigneeName, request.CreatedBy
-                ,firstStep.Step.Id,firstStep.Step.ApprovalGroupIds, firstStep.Step.Name,request.CompanyName,request.DirectManagerHrId,request.DepartmentManagerHrId
+                ,firstStep.Step.Id,firstStep.Step.ApprovalGroupIds, firstStep.Step.Name,request.CompanyName,request.DirectManagerHrId,request.SecondManagerHrId
                 );
             await _writeRepository.AddAsync(clearance);
             return clearance.Id;

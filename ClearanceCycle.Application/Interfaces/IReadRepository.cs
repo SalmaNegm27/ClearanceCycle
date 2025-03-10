@@ -7,12 +7,14 @@ namespace ClearanceCycle.Application.Interfaces
     public interface IReadRepository
     {
         Task<ResultDto<ClearanceDetailsDto>> GetRequestByID(int requestId,int stepId);
-        Task<bool> ExistsAsync(int resigneeId, DateTime lastWorkingDay);
+        Task<bool> ExistsAsync(int resigneeId);
 
         Task<ResultDto<ClearanceRequestsDto>> GetAllRequests(GetClearanceDataTableQuery requestsDto);
 
         Task<ResultDto<ClearanceReason>> GetReasons();
         Task<ResultDto<RequestHistoryDto>> GetAllRequestHistory(GetRequestHistoryQuery query);
+        Task<string> GetGroupName(int id);
+
     }
 
 }

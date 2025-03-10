@@ -48,7 +48,7 @@ namespace ClearanceCycle.WorkFlow.Services.Implementation
 
 
 
-        public async Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int stepId)
+        public async Task<StepResponseDto> GetCurrentStepWithApprovalGroupIds(int? stepId)
         {
             var result = new StepResponseDto();
 
@@ -82,6 +82,8 @@ namespace ClearanceCycle.WorkFlow.Services.Implementation
             return result;
 
         }
+
+       
 
     }
 }
