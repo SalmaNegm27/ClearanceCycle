@@ -11,9 +11,10 @@ namespace ClearanceCycle.Application.Interfaces
         Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance);
         Task<ReponseDto> PendingRequest(ProcessClearanceActionCommand pendingClearance);
 
-        Task<ReponseDto> CancelRequest(CancelCleareanceRequestCommand cancelCleareance);
+        Task<ReponseDto> CancelRequest(ProcessClearanceActionCommand cancelCleareance);
         Task<ReponseDto> UpdateLastWorkingDate(EditLastWorkingDateCommand editLastWorking);
         Task<int> AddApprovalWithEscalationAsync(ApprovalGroupEmployeesDto request);
+        Task<ReponseDto> UploadClearanceFile(UploadDocumentCommand uploadDocument);
 
 
 

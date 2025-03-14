@@ -12,6 +12,7 @@ namespace ClearanceCycle.Application.UseCases.Commands
         public int ActionId { get; set; }
 
         public string? Comment { get; set; }
+        public string? ResigneeHrId  { get; set; }
     }
 
 }

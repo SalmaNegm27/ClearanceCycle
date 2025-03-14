@@ -33,7 +33,7 @@ namespace ClearanceCycle.Application.UseCases.Commands
 
             if (await _readRepository.ExistsAsync(request.ResigneeId))
             {
-                throw new Exception("Clearance request already exists.");
+                throw new InvalidOperationException("Clearance request already exists.");
             }
 
             var clearance = ClearanceFactory.Create(request.CompanyId, request.ResigneeId, request.LastWorkingDay, request.ResignationReasonId, request.ResigneeHrId, request.ResigneeName, request.CreatedBy

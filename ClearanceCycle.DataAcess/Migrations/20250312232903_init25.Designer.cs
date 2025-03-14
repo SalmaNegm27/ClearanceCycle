@@ -4,6 +4,7 @@ using ClearanceCycle.DataAcess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClearanceCycle.DataAcess.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    partial class AuthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250312232903_init25")]
+    partial class init25
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -75,7 +78,10 @@ namespace ClearanceCycle.DataAcess.Migrations
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("MajourAreaId")
+                    b.Property<int?>("MajorAreaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MajourAreaId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -726,6 +732,9 @@ namespace ClearanceCycle.DataAcess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("SingleApprovalGroupId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("StepApprovalGroups");
@@ -876,7 +885,9 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.HasOne("ClearanceCycle.Domain.Entities.MajourArea", "MajourArea")
                         .WithMany()
-                        .HasForeignKey("MajourAreaId");
+                        .HasForeignKey("MajourAreaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ApprovalGroup");
 

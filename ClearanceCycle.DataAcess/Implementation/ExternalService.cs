@@ -95,7 +95,6 @@ namespace ClearanceCycle.DataAcess.Implementation
             }
             return false;
         }
-
         public async Task<bool> DeactivateEmployeeBusinessAccount(string hr_id)
         {
             var token = await GetRMSToken();
@@ -122,8 +121,6 @@ namespace ClearanceCycle.DataAcess.Implementation
 
 
         }
-
-
         public async Task SendMails(EmailServiceDto emailService)
         {
             var credential = _settings.MyAman;
@@ -134,9 +131,43 @@ namespace ClearanceCycle.DataAcess.Implementation
                 password = credential.Password,
                 email = emailService.Email
             };
-           await _client.SendAsync<string>(url, HttpMethod.Post, obj);
-            
+            await _client.SendAsync<string>(url, HttpMethod.Post, obj);
+
         }
+
+        public async Task<bool> ActiveEmployeePortalAccount(string hr_id)
+        {
+            var response = new TokenSettingResponse();
+            var credential = _settings.PortalSettings;
+            var token = await GetPortalToken();
+            if (token == null)
+            {
+               return false;
+            }
+            string url = $"{credential.BaseUrl}/api/User/ActivateUser";
+            var obj = new
+            {
+                userHrid = hr_id
+
+            };
+            try
+            {
+                var respone = await _client.SendAsync<TokenSettingResponse>(url, HttpMethod.Post, obj, token);
+
+                if (respone.IsSuccess)
+                {
+                   return true ;
+                }
+                
+                return false;
+
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to Active user in portal" + ex.Message);
+            }
+        }
+
 
 
     }

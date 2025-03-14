@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClearanceCycle.Domain.Entities;
 
@@ -20,7 +21,7 @@ public partial class ApprovalGroupEmployee
     public virtual Employee Employee { get; set; } = null!;
 
     public int? CompanyId { get; set; }
-    public int? MajorAreaId { get; set; }
+    public int? MajourAreaId { get; set; }
     public MajourArea MajourArea { get; set; }
 
     public ICollection<EscalationPointEmployee> EscalationPointEmployees { get; set; }

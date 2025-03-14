@@ -15,6 +15,7 @@ namespace ClearanceCycle.Application.Interfaces
         Task<string> GetRMSToken();
         Task<bool> DeactivateEmployeeBusinessAccount(string hr_id);
         Task SendMails(EmailServiceDto emailService);
+        Task<bool> ActiveEmployeePortalAccount(string hr_id);
 
     }
 }

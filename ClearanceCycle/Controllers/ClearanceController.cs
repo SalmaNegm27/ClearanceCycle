@@ -84,7 +84,7 @@ namespace ClearanceCycle.Controllers
         }
 
         [HttpPost("CancelClearanceRequest")]
-        public async Task<IActionResult> CancelRequest([FromBody] CancelCleareanceRequestCommand command)
+        public async Task<IActionResult> CancelRequest([FromBody] ProcessClearanceActionCommand command)
         {
             var result = await _mediator.Send(command);
             return Ok(result);
@@ -108,6 +108,13 @@ namespace ClearanceCycle.Controllers
             {
                 return StatusCode(500, $"Error: {ex.Message}");
             }
+        }
+
+        [HttpPost("UploadClearanceDocument")]
+        public async Task<IActionResult> Upload([FromForm] UploadDocumentCommand uploadDocument)
+        {
+
+            return Ok(await _mediator.Send(uploadDocument));
         }
     }
 }

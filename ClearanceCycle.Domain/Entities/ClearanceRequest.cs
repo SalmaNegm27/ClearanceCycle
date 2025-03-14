@@ -33,8 +33,8 @@ namespace ClearanceCycle.Domain.Entities
         public StepApprovalGroup StepApprovalGroup { get; set; }
         public ICollection<ClearanceHistory>? ClearanceHistories { get; set; }
 
-        public bool IsResigneeAccountsColosed { get; set; }
-        public DateTime AccoountsClosedAt { get; set; } = DateTime.Now;
+        public bool IsResigneeAccountsClosed { get; set; }
+        public DateTime AccountsClosedAt { get; set; } = DateTime.Now;
 
 
     }

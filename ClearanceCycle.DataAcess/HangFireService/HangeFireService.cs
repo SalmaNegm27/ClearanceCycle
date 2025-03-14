@@ -53,8 +53,8 @@ namespace ClearanceCycle.DataAcess.HangFireService
                         }
 
                         request.Employee.Active = false;
-                        request.IsResigneeAccountsColosed = true;
-                        request.AccoountsClosedAt = DateTime.Now;
+                        request.IsResigneeAccountsClosed = true;
+                        request.AccountsClosedAt = DateTime.Now;
 
                         await _externalService.DeactivateEmployeePortalAccounts(request.ResigneeHrId);
                         await _externalService.DeactivateEmployeeAmanCardAPI(request.Employee.NationalId);
@@ -88,7 +88,7 @@ namespace ClearanceCycle.DataAcess.HangFireService
 
             var clearanceRequests = await _context.ClearanceRequests.Include(c => c.Employee)
                 .Where(r => r.LastWorkingDayDate.Date <= DateTime.Today.Date &&
-                                          !r.IsCanceled && !r.IsFinished && r.Employee.Active && !r.IsResigneeAccountsColosed).ToListAsync();
+                                          !r.IsCanceled && !r.IsFinished && r.Employee.Active && !r.IsResigneeAccountsClosed).ToListAsync();
 
             return clearanceRequests;
 
@@ -105,12 +105,11 @@ namespace ClearanceCycle.DataAcess.HangFireService
                 var subject = _configuration["EmailTemplates:Subject"];
                 foreach (var request in requests)
                 {
-                    var approvals =await GetStepApprovalGroup(request.StepApprovalGroup.CurrentStepId);
-                    var managers = await GetManagerToEscalate(
-                        request.Employee.MajourAreaId,
-                        request.Employee.CompanyId,
-                        approvals.ToList()
-                    );
+                    List<int> pendingGroups = request.StepApprovalGroup.ApprovalGroups
+                                      .Where(ag => !ag.IsApproved)
+                                     .Select(ag => ag.ApprovalGroupId)
+                                    .ToList();
+                    var managers = await GetManagerToEscalate(request.Employee.MajourAreaId, request.Employee.CompanyId,pendingGroups);
                     var email = new EmailServiceDto
                     {
                         Email = new Email
@@ -137,26 +136,37 @@ namespace ClearanceCycle.DataAcess.HangFireService
             DateTime beforeTwoDays = DateTime.Today.AddDays(-2);
 
             return await _context.ClearanceRequests
-                .Include(c => c.Employee)
-                .Include(c => c.StepApprovalGroup)
-                .Where(c => !c.IsCanceled && !c.IsFinished && c.StepApprovalGroup.CreatedAt <= beforeTwoDays && !c.StepApprovalGroup.IsFinished)
-                .ToListAsync();
+                                .Include(c=>c.Employee)
+                                  .Include(c => c.StepApprovalGroup)
+                                   .ThenInclude(sg => sg.ApprovalGroups)
+                                   .Where(c => !c.IsFinished && !c.IsCanceled  && c.StepApprovalGroup.CreatedAt <= beforeTwoDays
+                                     && c.StepApprovalGroup.ApprovalGroups.Any(ag => !ag.IsApproved))
+                                     .ToListAsync();
         }
-        private async Task<List<int>> GetStepApprovalGroup(int? stepId)
-        {
-            var step= await _context.Steps.FirstOrDefaultAsync(s=>s.Id == stepId);
-            return step.ApprovalGroupIds;
-        }
+      
 
         private async Task<List<string>> GetManagerToEscalate(int majorArea, int company, List<int> approvalGroupIds)
         {
-            return await _context.EscalationPointEmployees
+         
+            var request =  _context.EscalationPointEmployees
                 .Include(x => x.ApprovalGroupEmployee)
-                .Where(x => x.ApprovalGroupEmployee.MajorAreaId == majorArea
+                .Where(x => x.ApprovalGroupEmployee.MajourAreaId == majorArea
                     && x.ApprovalGroupEmployee.CompanyId == company
-                    && approvalGroupIds.Contains(x.ApprovalGroupEmployee.ApprovalGroupId))
+                           // && approvalGroupIds.Contains(x.ApprovalGroupEmployee.ApprovalGroupId)
+                            );
+
+            var allManagers = await request.ToListAsync();
+            List<string> filteredManagers =  allManagers
+                .Where(x => approvalGroupIds.Contains(x.ApprovalGroupEmployee.ApprovalGroupId))
                 .Select(x => x.Email)
-                .ToListAsync();
+                .ToList();
+            return filteredManagers;
+
+            //request = request.Where(x => approvalGroupIds.Contains(x.ApprovalGroupEmployee.ApprovalGroupId));
+
+
+            //return await request.Select(x => x.Email)
+               // .ToListAsync();
         }
 
         #endregion

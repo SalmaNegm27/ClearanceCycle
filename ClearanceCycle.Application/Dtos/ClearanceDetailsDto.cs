@@ -26,6 +26,7 @@ namespace ClearanceCycle.Application.Dtos
 
         public string DirectManager { get; set; }
         public string Phone { get; set; }
+        public string ResignationFileName { get; set; }
 
         public IList<ActionDto> Actions { get; set; }
     }

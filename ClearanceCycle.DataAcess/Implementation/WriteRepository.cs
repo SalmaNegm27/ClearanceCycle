@@ -1,11 +1,15 @@
 ﻿namespace ClearanceCycle.DataAcess.Implementation
 {
     using ApprovalSystem.Services.Services.Interface;
+    using Azure;
+    using Azure.Core;
     using ClearanceCycle.Application.Dtos;
     using ClearanceCycle.Application.Interfaces;
     using ClearanceCycle.Application.UseCases.Commands;
     using ClearanceCycle.Domain.Entities;
     using ClearanceCycle.Domain.Enums;
+    using MediatR;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.EntityFrameworkCore;
     using System.Linq.Expressions;
 
@@ -13,11 +17,13 @@
     {
         private readonly AuthDbContext _context;
         private readonly IApprovalCycleService _approvalCycleService;
+        private static readonly string[] AllowedExtensions = { ".JPEG", ".JPG", ".PNG" ,".PDF"}; 
+
         public WriteRepository(AuthDbContext context, IApprovalCycleService approvalCycleService)
         {
             _context = context;
             _approvalCycleService = approvalCycleService;
-            
+
 
 
         }
@@ -36,7 +42,6 @@
         public async Task<ReponseDto> ApproveRequest(ProcessClearanceActionCommand approveClearance)
         {
 
-            var step = await _approvalCycleService.GetCurrentStepWithApprovalGroupIds(approveClearance.NextStepId);
             ClearanceRequest? request = await _context.ClearanceRequests
                                                       .Include(c => c.StepApprovalGroup)
                                                       .ThenInclude(s => s.ApprovalGroups)
@@ -47,29 +52,31 @@
                 throw new InvalidOperationException("Request Doesn't Exist");
             }
 
-            if (approveClearance.NextStepId == null)
-            {
-                request.IsFinished = true;
-                request.Status = ResignationStatus.Finished;
-            }
-            var approvalGroupToUpdate = request.StepApprovalGroup.ApprovalGroups
-                .FirstOrDefault(a => a.ApprovalGroupId == approveClearance.ApprovalGroupId);
+            var approvalGroups = request.StepApprovalGroup?.ApprovalGroups;
+            if (approvalGroups == null)
+                throw new InvalidOperationException("Approval groups not found.");
 
-            if (approvalGroupToUpdate != null)
+            var approvalGroupToUpdate = approvalGroups.FirstOrDefault(a => a.ApprovalGroupId == approveClearance.ApprovalGroupId);
+            if (approvalGroupToUpdate == null)
+                throw new InvalidOperationException("Approval group not found.");
+
+            if (!approvalGroupToUpdate.IsApproved)
             {
                 approvalGroupToUpdate.IsApproved = true;
                 request.Status = ResignationStatus.PendingApprove;
-
             }
 
-            bool allGroupsApproved = request.StepApprovalGroup.ApprovalGroups.All(a => a.IsApproved);
 
-            if (allGroupsApproved || request.StepApprovalGroup.ApprovalGroups.Count == 1)
+            bool allGroupsApproved = approvalGroups.All(a => a.IsApproved);
+
+            if (allGroupsApproved || approvalGroups.Count == 1)
             {
                 request.StepApprovalGroup.IsFinished = true;
 
-                if (approveClearance.NextStepId > 0)
+                if (approveClearance.NextStepId.HasValue)
                 {
+                    var step = await _approvalCycleService.GetCurrentStepWithApprovalGroupIds(approveClearance.NextStepId);
+
                     var newStep = new StepApprovalGroup
                     {
                         CurrentStepId = approveClearance.NextStepId,
@@ -87,6 +94,11 @@
                     await _context.SaveChangesAsync();
 
                     request.StepApprovalGroupId = newStep.Id;
+                }
+                else
+                {
+                    request.IsFinished = true;
+                    request.Status = ResignationStatus.Finished;
                 }
             }
 
@@ -148,29 +160,24 @@
         #endregion
 
         #region Cancel Request 
-        public async Task<ReponseDto> CancelRequest(CancelCleareanceRequestCommand cancelCleareance)
+        public async Task<ReponseDto> CancelRequest(ProcessClearanceActionCommand cancelCleareance)
         {
-            ClearanceRequest? request = await _context.ClearanceRequests
-                                                      .FirstOrDefaultAsync(c => c.Id == cancelCleareance.RequestId && !c.IsCanceled && !c.IsFinished);
 
-            if (request == null)
-            {
-                throw new InvalidOperationException("Request Doesn't Exist");
-            }
-
+            var request = await GetCleranceQuery(cancelCleareance.RequestId);
             request.Status = ResignationStatus.Canceled;
             request.IsCanceled = true;
+            request.Employee.Active = true;
 
             if (await _context.SaveChangesAsync() > 0)
             {
                 return new ReponseDto
                 {
-                    Message = "Request Approved Successfully",
+                    Message = "Request Canceled Successfully",
                     Success = true,
                 };
             }
 
-            throw new InvalidOperationException("Failed to Save Request Data");
+            throw new InvalidOperationException("Failed to Save Cancel Request Data");
         }
 
         #endregion
@@ -178,13 +185,8 @@
         #region Edit Last Working Date 
         public async Task<ReponseDto> UpdateLastWorkingDate(EditLastWorkingDateCommand editLastWorking)
         {
-            ClearanceRequest? request = await _context.ClearanceRequests
-                                                      .FirstOrDefaultAsync(c => c.Id == editLastWorking.RequestId && !c.IsCanceled && !c.IsFinished);
+            ClearanceRequest? request =await GetCleranceQuery(editLastWorking.RequestId);
 
-            if (request == null)
-            {
-                throw new InvalidOperationException("Request Doesn't Exist");
-            }
 
             request.LastWorkingDayDate = editLastWorking.LastWorkingDay;
 
@@ -218,18 +220,19 @@
                     IsActive = request.IsActive,
                     IsAdmin = request.IsAdmin,
                     CompanyId = request.CompanyId,
-                    MajorAreaId = request.MajorAreaId
+                    //MajourAreaId = request.MajorAreaId,
+                    EscalationPointEmployees = request.EscalationEmails.Select(email => new EscalationPointEmployee
+                     {
+                         //ApprovalGroupEmployeeId = approvalGroupEmployee.Id,
+                         Email = email
+                     }).ToList()
                 };
 
                 _context.ApprovalGroupEmployees.Add(approvalGroupEmployee);
 
-                var escalationEmployees = request.EscalationEmails.Select(email => new EscalationPointEmployee
-                {
-                    ApprovalGroupEmployeeId = approvalGroupEmployee.Id,
-                    Email = email
-                }).ToList();
+               
 
-                _context.EscalationPointEmployees.AddRange(escalationEmployees);
+                //_context.EscalationPointEmployees.AddRange(approvalGroupEmployee);
                 await _context.SaveChangesAsync();
 
                 return approvalGroupEmployee.Id;
@@ -240,6 +243,79 @@
             }
         }
 
+
+        public async Task<ReponseDto> UploadClearanceFile(UploadDocumentCommand uploadDocument)
+        {
+            var result = new ReponseDto();
+            var request = await GetCleranceQuery(uploadDocument.RequestId);
+            var res = await UploadedFile(uploadDocument.File);
+            if(res == null)
+            {
+                result.Success = false;
+                result.Message = "failed to  uploaded file";
+            }
+
+            request.ResignationFileName = res;
+            var saved = await _context.SaveChangesAsync();
+            if (saved > 0)
+            {
+                result.Success = true;
+                result.Message = "File uploaded successfully";
+                return result;
+            }
+            return result;
+        }
+        private async Task<string> UploadedFile(IFormFile file)
+        {
+            
+            if (file == null || file.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(file), "File is empty or null.");
+            }
+
+            string fileExtension = Path.GetExtension(file.FileName).ToUpper();
+
+            if (!AllowedExtensions.Contains(fileExtension))
+            {
+                return null;
+            }
+
+            string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Resignations");
+            string uniqueFileName = Guid.NewGuid().ToString() + fileExtension;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+
+            if (!Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(uploadsFolder)))
+            {
+                throw new InvalidOperationException("Invalid file path.");
+            }
+
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            using (var stream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return uniqueFileName;
+        }
+
+        private async Task<ClearanceRequest> GetCleranceQuery(int requestId)
+        {
+          var request = await _context.ClearanceRequests.Include(x=>x.Employee)
+                                           .FirstOrDefaultAsync(c => c.Id == requestId && !c.IsCanceled && !c.IsFinished);
+
+            if (request == null)
+            {
+                throw new InvalidOperationException("Request Doesn't Exist");
+            }
+
+            return request;
+
+        }
 
     }
 }

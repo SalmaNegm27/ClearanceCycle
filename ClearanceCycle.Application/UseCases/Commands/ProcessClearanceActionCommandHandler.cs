@@ -20,12 +20,15 @@ namespace ClearanceCycle.Application.UseCases.Commands
         private readonly IWriteRepository _writeRepository;
         private readonly IApprovalCycleService _approvalCycleService;
         private readonly IReadRepository _readRepository;
+        private readonly IExternalService _externalService;
 
-        public ProcessClearanceActionCommandHandler(IWriteRepository writeRepository, IApprovalCycleService approvalCycleService, IReadRepository readRepository)
+        public ProcessClearanceActionCommandHandler(IWriteRepository writeRepository, IApprovalCycleService approvalCycleService, 
+            IReadRepository readRepository, IExternalService externalService)
         {
             _writeRepository = writeRepository;
             _approvalCycleService = approvalCycleService;
             _readRepository = readRepository;
+            _externalService = externalService;
         }
         public async Task<ReponseDto> Handle(ProcessClearanceActionCommand request, CancellationToken cancellationToken)
         {
@@ -45,6 +48,12 @@ namespace ClearanceCycle.Application.UseCases.Commands
                     result = await _writeRepository.PendingRequest(request);
                     requestHistory = ClearanceHistoryFactory.Create(request.ActionBy, ActionType.Pending, request.Comment, request.RequestId, groupName);
                     break;
+                case (int)ActionType.Canceled:
+                    result = await _writeRepository.CancelRequest(request);
+                    requestHistory = ClearanceHistoryFactory.Create(request.ActionBy, Domain.Enums.ActionType.Canceled, "Request Canceled", request.RequestId, groupName);
+                    await _externalService.ActiveEmployeePortalAccount(request.ResigneeHrId);
+                    break;
+
 
                 default:
                     throw new ArgumentException("Invalid action type");
