@@ -19,6 +19,7 @@ namespace ClearanceCycle.Application.UseCases.Queries
         }
         public async Task<ResultDto<ClearanceRequestsDto>> Handle(GetClearanceDataTableQuery request, CancellationToken cancellationToken)
         {
+            if (request.IsFinishedRequest) { return await _readRepository.GetAllFinishedRequests(request); }
           return  await _readRepository.GetAllRequests(request);
         }
     }

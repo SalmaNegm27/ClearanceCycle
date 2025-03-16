@@ -14,6 +14,7 @@ namespace ClearanceCycle.Application.Interfaces
         Task<ResultDto<ClearanceReason>> GetReasons();
         Task<ResultDto<RequestHistoryDto>> GetAllRequestHistory(GetRequestHistoryQuery query);
         Task<string> GetGroupName(int id);
+        Task<ResultDto<ClearanceRequestsDto>> GetAllFinishedRequests(GetClearanceDataTableQuery query);
 
     }
 

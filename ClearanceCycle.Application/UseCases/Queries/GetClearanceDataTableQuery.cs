@@ -17,5 +17,8 @@ namespace ClearanceCycle.Application.UseCases.Queries
         public string? Filter { get; set; }
         public int? GroupId { get; set; }
         public string? HrId { get; set; }
+
+        public bool IsFinishedRequest { get; set; }
+
     }
 }
