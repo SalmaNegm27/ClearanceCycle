@@ -17,15 +17,14 @@
     {
         private readonly AuthDbContext _context;
         private readonly IApprovalCycleService _approvalCycleService;
-        private static readonly string[] AllowedExtensions = { ".JPEG", ".JPG", ".PNG" ,".PDF"}; 
+        private static readonly string[] AllowedExtensions = { ".JPEG", ".JPG", ".PNG", ".PDF" };
+        private readonly IExternalService _externalService;
 
-        public WriteRepository(AuthDbContext context, IApprovalCycleService approvalCycleService)
+        public WriteRepository(AuthDbContext context, IApprovalCycleService approvalCycleService, IExternalService externalService)
         {
             _context = context;
             _approvalCycleService = approvalCycleService;
-
-
-
+            _externalService = externalService;
         }
         #region Add New Clearance Request
         public async Task<int> AddAsync(ClearanceRequest clearanceRequest)
@@ -164,15 +163,36 @@
         {
 
             var request = await GetCleranceQuery(cancelCleareance.RequestId);
+
+            if (request.IsCanceled)
+            {
+                return new ReponseDto
+                {
+                    Message = "request Already Canceled",
+                    Success = false,
+                };
+            }
             request.Status = ResignationStatus.Canceled;
             request.IsCanceled = true;
             request.Employee.Active = true;
 
-            if (await _context.SaveChangesAsync() > 0)
+            if (await _context.SaveChangesAsync() < 0)
+            {
+                throw new InvalidOperationException("Failed to Save Request Data");
+            }
+            OpenTicketDto ticketDto = new OpenTicketDto
+            {
+                ResigneeHrID = request.ResigneeHrId,
+                Subject = "Request to Open RmS Accounts ",
+                Description = $"request for activation  accounts for RMS for this employee {request.ResigneeHrId}. Could you please assist in setting up the necessary accounts"
+            };
+
+            var response = await _externalService.OpenTicketAsync(ticketDto);
+            if (response.Success)
             {
                 return new ReponseDto
                 {
-                    Message = "Request Canceled Successfully",
+                    Message = "request Canceled Successfully",
                     Success = true,
                 };
             }
@@ -185,7 +205,7 @@
         #region Edit Last Working Date 
         public async Task<ReponseDto> UpdateLastWorkingDate(EditLastWorkingDateCommand editLastWorking)
         {
-            ClearanceRequest? request =await GetCleranceQuery(editLastWorking.RequestId);
+            ClearanceRequest? request = await GetCleranceQuery(editLastWorking.RequestId);
 
 
             request.LastWorkingDayDate = editLastWorking.LastWorkingDay;
@@ -222,15 +242,15 @@
                     CompanyId = request.CompanyId,
                     //MajourAreaId = request.MajorAreaId,
                     EscalationPointEmployees = request.EscalationEmails.Select(email => new EscalationPointEmployee
-                     {
-                         //ApprovalGroupEmployeeId = approvalGroupEmployee.Id,
-                         Email = email
-                     }).ToList()
+                    {
+                        //ApprovalGroupEmployeeId = approvalGroupEmployee.Id,
+                        Email = email
+                    }).ToList()
                 };
 
                 _context.ApprovalGroupEmployees.Add(approvalGroupEmployee);
 
-               
+
 
                 //_context.EscalationPointEmployees.AddRange(approvalGroupEmployee);
                 await _context.SaveChangesAsync();
@@ -249,7 +269,7 @@
             var result = new ReponseDto();
             var request = await GetCleranceQuery(uploadDocument.RequestId);
             var res = await UploadedFile(uploadDocument.File);
-            if(res == null)
+            if (res == null)
             {
                 result.Success = false;
                 result.Message = "failed to  uploaded file";
@@ -267,7 +287,7 @@
         }
         private async Task<string> UploadedFile(IFormFile file)
         {
-            
+
             if (file == null || file.Length == 0)
             {
                 throw new ArgumentNullException(nameof(file), "File is empty or null.");
@@ -305,8 +325,8 @@
 
         private async Task<ClearanceRequest> GetCleranceQuery(int requestId)
         {
-          var request = await _context.ClearanceRequests.Include(x=>x.Employee)
-                                           .FirstOrDefaultAsync(c => c.Id == requestId && !c.IsCanceled && !c.IsFinished);
+            var request = await _context.ClearanceRequests.Include(x => x.Employee)
+                                             .FirstOrDefaultAsync(c => c.Id == requestId  && !c.IsFinished);
 
             if (request == null)
             {

@@ -168,6 +168,19 @@ namespace ClearanceCycle.DataAcess.Implementation
             }
         }
 
+        public async Task<ReponseDto> OpenTicketAsync(OpenTicketDto ticketDto)
+        {
+            var credential = _settings.MyAman;
+            string url = $"{credential.BaseUrl}/Ticketing/GenerateResignationTicket";
+            var obj = new
+            {
+                resigneeHrId = ticketDto.ResigneeHrID,
+                subject = ticketDto.Subject,
+                description = ticketDto.Description,
+            };
+          return  await _client.SendAsync<ReponseDto>(url, HttpMethod.Post, obj);
+
+        }
 
 
     }

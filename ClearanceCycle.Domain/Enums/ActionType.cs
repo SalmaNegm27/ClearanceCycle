@@ -8,11 +8,11 @@ namespace ClearanceCycle.Domain.Enums
 {
     public enum ActionType
     {
-        Created=3,
+        Approved=1,
         Modified=2,
         Canceled=3,
-        Approved=1,
         Pending=4,
+        Created=5,
 
     }
 }

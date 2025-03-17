@@ -46,7 +46,8 @@ internal class Program
 
             var recurringJobManager = serviceProvider.GetRequiredService<IRecurringJobManager>();
 
-           // recurringJobManager.AddOrUpdate("Deactivate Employee Accounts when resigned (New Clearance System) ", () => resignationBL.DeactivateAllEmployeeAccounts(), Cron.Daily());
+           recurringJobManager.AddOrUpdate("Deactivate Employee Accounts when resigned (New Clearance System) ", () => resignationBL.DeactivateAllEmployeeAccounts(), Cron.Daily());
+           recurringJobManager.AddOrUpdate("Escalation Mails Job  (New Clearance System) ", () => resignationBL.ProcessEscalation(), Cron.Daily());
 
         }
 

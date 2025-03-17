@@ -16,6 +16,8 @@ namespace ClearanceCycle.Application.Interfaces
         Task<string> GetGroupName(int id);
         Task<ResultDto<ClearanceRequestsDto>> GetAllFinishedRequests(GetClearanceDataTableQuery query);
 
+        Task<ResultDto<ClearanceRequestsDto>> GetCanceledRequestsAsync(GetClearanceDataTableQuery query);
+
     }
 
 }

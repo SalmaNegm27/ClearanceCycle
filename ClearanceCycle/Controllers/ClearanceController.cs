@@ -17,12 +17,14 @@ namespace ClearanceCycle.Controllers
         private readonly IExternalService _externalService;
         private readonly IHangFireService _hang;
         private readonly IWriteRepository _writeRepository;
-        public ClearanceController(IMediator mediator,IExternalService externalService,IHangFireService hang,IWriteRepository writeRepository)
+        private readonly IReadRepository _readRepository;
+        public ClearanceController(IMediator mediator, IExternalService externalService, IHangFireService hang, IWriteRepository writeRepository, IReadRepository readRepository)
         {
             _mediator = mediator;
             _externalService = externalService;
             _hang = hang;
             _writeRepository = writeRepository;
+            _readRepository = readRepository;
         }
         [HttpPost("AddClearanceRequest")]
         public async Task<IActionResult> AddClearance([FromBody] AddClearanceCommand addResignation)
@@ -53,7 +55,7 @@ namespace ClearanceCycle.Controllers
         [HttpPost("ChangStep")]
         public async Task<IActionResult> ApproveRequest([FromBody] ProcessClearanceActionCommand approveClearanceCommand)
         {
-        
+
             return Ok(await _mediator.Send(approveClearanceCommand));
         }
 
@@ -63,7 +65,7 @@ namespace ClearanceCycle.Controllers
             return Ok(await _mediator.Send(new GetClearanceReasonsQuery()));
         }
 
-       
+
         [HttpPost("UpdateLastWorkingDate")]
         public async Task<IActionResult> Update([FromBody] EditLastWorkingDateCommand editLastWorkingDate)
         {
@@ -77,9 +79,9 @@ namespace ClearanceCycle.Controllers
         }
 
         [HttpGet("GetAllRequestHistory")]
-        public async Task<IActionResult> GetAllClearanceRequests([FromQuery]int id)
+        public async Task<IActionResult> GetAllClearanceRequests([FromQuery] int id)
         {
-            var result = await _mediator.Send(new GetRequestHistoryQuery{ RequestId = id });
+            var result = await _mediator.Send(new GetRequestHistoryQuery { RequestId = id });
             return Ok(result);
         }
 
@@ -115,6 +117,13 @@ namespace ClearanceCycle.Controllers
         {
 
             return Ok(await _mediator.Send(uploadDocument));
+        }
+
+        [HttpPost("GetCanceledRequests")]
+        public async Task<IActionResult> GetCanceledRequests([FromBody] GetClearanceDataTableQuery getClearance)
+        {
+
+            return Ok(await _readRepository.GetCanceledRequestsAsync(getClearance));
         }
     }
 }

@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace ClearanceCycle.Application.UseCases.Commands
 {
-    public record UploadDocumentCommand :IRequest<ReponseDto>
+    public class UploadDocumentCommand :IRequest<ReponseDto>
     {
         public int RequestId { get; set; }
         public IFormFile File { get; set; }

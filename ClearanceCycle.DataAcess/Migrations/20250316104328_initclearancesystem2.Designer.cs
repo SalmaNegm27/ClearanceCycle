@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ClearanceCycle.DataAcess.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    [Migration("20250312232903_init25")]
-    partial class init25
+    [Migration("20250316104328_initclearancesystem2")]
+    partial class initclearancesystem2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -78,10 +78,7 @@ namespace ClearanceCycle.DataAcess.Migrations
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("bit");
 
-                    b.Property<int?>("MajorAreaId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MajourAreaId")
+                    b.Property<int?>("MajourAreaId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -114,7 +111,8 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("ActionBy")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<int>("ActionType")
                         .HasColumnType("int");
@@ -129,7 +127,8 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("Comment")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.HasKey("Id");
 
@@ -184,11 +183,13 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("CreatedBy")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("DirectManagerHrid")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<int>("EmployeeId")
                         .HasColumnType("int");
@@ -221,7 +222,8 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("SecondManagerHrId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<int?>("Status")
                         .HasColumnType("int");
@@ -631,7 +633,8 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -730,10 +733,8 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("SingleApprovalGroupId")
-                        .HasColumnType("int");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 
@@ -885,9 +886,7 @@ namespace ClearanceCycle.DataAcess.Migrations
 
                     b.HasOne("ClearanceCycle.Domain.Entities.MajourArea", "MajourArea")
                         .WithMany()
-                        .HasForeignKey("MajourAreaId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("MajourAreaId");
 
                     b.Navigation("ApprovalGroup");
 

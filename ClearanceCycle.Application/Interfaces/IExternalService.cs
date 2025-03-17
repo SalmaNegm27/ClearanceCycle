@@ -16,6 +16,7 @@ namespace ClearanceCycle.Application.Interfaces
         Task<bool> DeactivateEmployeeBusinessAccount(string hr_id);
         Task SendMails(EmailServiceDto emailService);
         Task<bool> ActiveEmployeePortalAccount(string hr_id);
+        Task<ReponseDto> OpenTicketAsync(OpenTicketDto ticketDto);
 
     }
 }

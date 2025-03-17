@@ -11,7 +11,7 @@ namespace ClearanceCycle.Domain.Entities
         public Employee Employee { get; set; }
         [MaxLength(20)]
         public string ResigneeHrId { get; set; }
-        [MaxLength(30)]
+        [MaxLength(100)]
         public string ResigneeName { get; set; }
         public int ClearanceReasonId { get;  set; }
         public ClearanceReason ClearanceReason { get; set; }
@@ -22,12 +22,16 @@ namespace ClearanceCycle.Domain.Entities
         [MaxLength(50)]
         public string Comment { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [MaxLength(10)]
+
         public string CreatedBy { get; set; }
         public bool IsFinished { get; set; }
         public bool IsCanceled { get; set; }
-        public string DirectManagerHrid { get; set; }
-        public string SecondManagerHrId { get; set; }
         [MaxLength(10)]
+        public string DirectManagerHrid { get; set; }
+        [MaxLength(10)]
+        public string SecondManagerHrId { get; set; }
+        [MaxLength(40)]
         public string CompanyName { get; set; }
         public int StepApprovalGroupId { get; set; }
         public StepApprovalGroup StepApprovalGroup { get; set; }

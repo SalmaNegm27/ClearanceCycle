@@ -239,8 +239,6 @@ namespace ClearanceCycle.DataAcess.Implementation
         #endregion
 
 
-
-
         #region Check If Request Exist Before
         public async Task<bool> ExistsAsync(int resigneeId)
         {
@@ -321,7 +319,7 @@ namespace ClearanceCycle.DataAcess.Implementation
                                                     .Include(r => r.Employee)
                                                     .Include(r => r.StepApprovalGroup)
                                                     .Include(r => r.StepApprovalGroup.ApprovalGroups)
-                                                    .Where(r =>  r.IsFinished == isFinished)
+                                                    .Where(r =>  r.IsFinished == isFinished && !r.IsCanceled)
                                                     .AsNoTracking();
 
             if (query.GroupId > 0)
@@ -344,6 +342,46 @@ namespace ClearanceCycle.DataAcess.Implementation
             {
                 requests = ApplyPermissionFilter(requests, query.HrId, query.GroupId);
             }
+
+            // Apply Sorting
+            requests = ApplySorting(requests, query);
+
+            // Count Total Records
+            int totalRecords = await requests.CountAsync();
+
+            if (totalRecords == 0)
+            {
+                return new ResultDto<ClearanceRequestsDto>
+                {
+                    TotalRecords = 0,
+                    Success = true
+                };
+            }
+
+            // Apply Pagination and Select DTO
+            var data = await ApplyPaginationAndProjection(requests, query);
+
+            return new ResultDto<ClearanceRequestsDto>
+            {
+                TotalRecords = totalRecords,
+                Data = data,
+                Success = true
+            };
+        }
+
+        public async Task<ResultDto<ClearanceRequestsDto>> GetCanceledRequestsAsync(GetClearanceDataTableQuery query)
+        {
+
+            var requests = _context.ClearanceRequests
+                                                   .Include(r => r.ClearanceReason)
+                                                   .Include(r => r.Employee)
+                                                   .Include(r => r.StepApprovalGroup)
+                                                   .Include(r => r.StepApprovalGroup.ApprovalGroups)
+                                                   .Where(r => r.IsCanceled )
+                                                   .AsNoTracking();
+
+            // Apply Group Filter
+            requests = ApplyGroupFilter(requests, query);
 
             // Apply Sorting
             requests = ApplySorting(requests, query);
